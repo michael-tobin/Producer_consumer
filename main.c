@@ -99,7 +99,7 @@ int insertItem(buffer_item item)
 		buffer_count++;
 
 		// Print the confirmation and the contents of the buffer
-		printf("Item %d inserted by a producer. \n", buffer_count);
+		printf("Item %d inserted by a producer. \n", item);
 		displayBuffer(buffer_count);
 
 		return 0;
@@ -121,12 +121,18 @@ int removeItem(buffer_item *item)
 {
 	if (buffer_count > 0)
 	{
-		*item = buffer[(buffer_count - 1)];
+		*item = buffer[0];
 
 		// Print out the contents of the shared buffer
-		printf("Item %d removed by a consumer. \n", buffer_count);
-		displayBuffer(buffer_count);
+		printf("Item %d removed by a consumer. \n", buffer[0]);
+
+		for (int i=0; i<buffer_count;i++)
+		{
+			buffer[i]=buffer[i+1];
+		}
 		buffer_count--;
+		displayBuffer(buffer_count);
+
 		return 0;
 	}
 
