@@ -8,8 +8,8 @@
 
 #define TRUE 1
 buffer_item buffer[BUFFER_SIZE];    // Buffer of size set in buffer.h
-sem_t empty;                        // For acquiring the empty lock
-sem_t full;                         // For acquiring the full lock
+sem_t empty;                        // Semaphore for empty lock
+sem_t full;                         // Semaphore for full lock
 pthread_mutex_t mutex;              // Mutex lock for critical section
 pthread_t pTID;              		// Producer thread id
 pthread_t cTID;                     // Consumer thread id
@@ -20,7 +20,7 @@ int main_sleep;                     // Main thread sleep time
 
 // Purpose: Displays the header before running the simulation.
 // PARAMETER: None
-// Logic: Simply prints a series of statements to the screen.
+// LOGIC: Simply prints a series of statements to the screen.
 void print_header()
 {
 	printf("\n====================================================\n");
@@ -35,7 +35,7 @@ void print_header()
 // PURPOSE: Function to initialize the mutual exclusion object mutex, along with the empty and full
 //          semaphores.
 // PARAMETER: None
-// Logic: todo
+// LOGIC: Creates the mutex, empty and full semaphores, attribute, and a counter for the buffer.
 void initialize()
 {
 	// Create the mutex lock
@@ -55,16 +55,16 @@ void initialize()
 
 // PURPOSE: Displays the content of the shared buffer
 // PARAMETER: A copy of the current buffer_count
-// Logic: todo
+// LOGIC: If the buffer is not empty, loops through until it reaches the end.
 void displayBuffer(int buff_ctr)
 {
 	printf("The current content of the buffer is [ ");
-	fflush(stdout);
+	fflush(stdout); // Needed for lines that done end in a new-line character.
 
 	if (buff_ctr == 0)
 	{
 		printf("empty");
-		fflush(stdout);
+		fflush(stdout);// Needed for lines that done end in a new-line character.
 	}
 
 	for (int x = 0; x < buff_ctr; x++)
@@ -72,12 +72,12 @@ void displayBuffer(int buff_ctr)
 		if (buff_ctr != 0)
 		{
 			printf("%d", buffer[x]);
-			fflush(stdout);
+			fflush(stdout);// Needed for lines that done end in a new-line character.
 
 			if (x + 1 != buff_ctr)
 			{
 				printf(", ");
-				fflush(stdout);
+				fflush(stdout);// Needed for lines that done end in a new-line character.
 			}
 		}
 	}
@@ -88,18 +88,17 @@ void displayBuffer(int buff_ctr)
 // PURPOSE: Buffer operation used by the Producer thread
 //          to insert an item into the buffer.
 // PARAMETER: buffer_item
-// Logic: todo
-// Returns: - 0 if successful
-//   - Otherwise -1 indicating an error
+// LOGIC: If there is room in the buffer, add the item, print it and return 0.
+//		  If there is not room, just return -1.
 int insertItem(buffer_item item)
 {
 	if (buffer_count < BUFFER_SIZE)
 	{
-		// Insert item into buffer
+		// Insert item into buffer and add it to the counter
 		buffer[buffer_count] = item;
 		buffer_count++;
 
-		// Print out the contents of the shared buffer
+		// Print the confirmation and the contents of the buffer
 		printf("Item %d inserted by a producer. \n", buffer_count);
 		displayBuffer(buffer_count);
 
@@ -115,8 +114,9 @@ int insertItem(buffer_item item)
 
 // PURPOSE: Buffer operation used by the Consumer thread to
 //          remove an item from the buffer.
-// PARAMETER: buffer_item
-// Logic: RETURNS: returns 0 if successful. returns -1 if not. todo
+// PARAMETER: Pointer to the item to be removed from the buffer.
+// LOGIC: If the buffer is not empty, decrement the counter so that the element is not counted.
+// The item is not actually removed from the buffer, but rather ignored in printing
 int removeItem(buffer_item *item)
 {
 	if (buffer_count > 0)
@@ -128,7 +128,9 @@ int removeItem(buffer_item *item)
 		displayBuffer(buffer_count);
 		buffer_count--;
 		return 0;
-	} else
+	}
+
+	else
 	{
 		// Error buffer empty
 		return -1;
@@ -139,10 +141,11 @@ int removeItem(buffer_item *item)
 // PURPOSE: The Producer thread will alternate between sleeping for
 //           a random period of time and inserting a random integer
 //           into the buffer.
-// PARAMETER: todo
-// Logic: todo
-
-_Noreturn void *producer(void *param)
+// PARAMETER: None
+// LOGIC: Sleeps for a random time that is less than main's sleep time, then wait for empty and mutex lock.
+// Then pick a random number and insert it into the buffer. If that fails, print an error. Then release the lock
+// and post a full semaphore.
+_Noreturn void *producer()
 {
 	buffer_item item;
 	while (TRUE)
@@ -174,9 +177,10 @@ _Noreturn void *producer(void *param)
 // PURPOSE: The Consumer will also sleep for a random period of time
 //          and, upon awakening, the consumer will attempt to
 //          remove an item from the buffer.
-// PARAMETER: todo
-// Logic: todo
-_Noreturn void *consumer(void *param)
+// PARAMETER: None
+// LOGIC: Sleeps for a random time that is less than main's sleep time, then wait for empty and mutex lock.
+// Attempt to remove an item from the buffer; if fails print an error. Release the mutex and post a full semaphore.
+_Noreturn void *consumer()
 {
 	buffer_item item;
 	while (TRUE)
@@ -209,7 +213,10 @@ _Noreturn void *consumer(void *param)
 // 				- The 2nd is time (in seconds) for main to sleep provided by user.
 // 				- The 3rd is the number of producer threads to create provided by user.
 // 				- The 4th is the number of consumer threads to create provided by user.
-// Logic: todo
+// LOGIC: Check the number of arguments, if good, convert them from strings to ints and store them. Print the header,
+// then print out the users input for confirmation and reminder to the user. Initialize the mutex, semaphore, etc. then
+// create the number of processes that the user requested. Sleep for the users chosen amount of time while the processes
+// run and then terminate.
 int main(int argc, char *argv[])
 {
 	// Ensure that the user has supplied enough arguments on the command line
@@ -234,7 +241,7 @@ int main(int argc, char *argv[])
 	print_header();
 
 	// Display values entered by user
-	printf("Program name is %s", argv[0]);
+	printf("Program name is: %s", argv[0]);
 	printf("\nTime to sleep before terminating = %d ", main_sleep);
 	printf("\nNumber of producer threads = %d ", num_produce_threads);
 	printf("\nNumber of consumer threads = %d ", num_consume_threads);
