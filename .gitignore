@@ -506,3 +506,5 @@ MigrationBackup/
 # End of https://www.gitignore.io/api/clion,visualstudio,visualstudiocode
 
 CMakeLists.txt
+
+.idea/

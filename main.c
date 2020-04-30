@@ -5,7 +5,6 @@
 #include <semaphore.h>
 #include "buffer.h"
 
-//todo try to remove item_count, use buffer_count instead
 
 #define TRUE 1
 buffer_item buffer[BUFFER_SIZE];    // Buffer of size set in buffer.h
@@ -17,7 +16,6 @@ pthread_t cTID;                     // Consumer thread id
 pthread_attr_t attr;                // Thread attributes
 int buffer_count;                   // Counter to keep track of the number of items in the buffer
 int main_sleep;                     // Main thread sleep time
-int item_count;                     // Keeps track of the last element in the buffer
 
 
 // Purpose: Displays the header before running the simulation.
@@ -52,7 +50,6 @@ void initialize()
 	// Initialize attributes and counters
 	pthread_attr_init(&attr);
 	buffer_count = 0;
-	item_count = 0;
 };
 
 
@@ -102,10 +99,8 @@ int insertItem(buffer_item item)
 		buffer[buffer_count] = item;
 		buffer_count++;
 
-		item_count = buffer_count;
-
 		// Print out the contents of the shared buffer
-		printf("Item %d inserted by a producer. \n", item_count);
+		printf("Item %d inserted by a producer. \n", buffer_count);
 		displayBuffer(buffer_count);
 
 		return 0;
@@ -127,20 +122,17 @@ int removeItem(buffer_item *item)
 	if (buffer_count > 0)
 	{
 		*item = buffer[(buffer_count - 1)];
-		item_count = buffer_count;
-		buffer_count--;
 
 		// Print out the contents of the shared buffer
-		printf("Item %d removed by a consumer. \n", item_count);
+		printf("Item %d removed by a consumer. \n", buffer_count);
 		displayBuffer(buffer_count);
+		buffer_count--;
 		return 0;
 	} else
 	{
 		// Error buffer empty
 		return -1;
 	}
-
-	item_count = item_count - 1; //todo is this line necessary? its not functioning
 }
 
 
@@ -149,7 +141,8 @@ int removeItem(buffer_item *item)
 //           into the buffer.
 // PARAMETER: todo
 // Logic: todo
-void *producer(void *param)
+
+_Noreturn void *producer(void *param)
 {
 	buffer_item item;
 	while (TRUE)
@@ -183,7 +176,7 @@ void *producer(void *param)
 //          remove an item from the buffer.
 // PARAMETER: todo
 // Logic: todo
-void *consumer(void *param)
+_Noreturn void *consumer(void *param)
 {
 	buffer_item item;
 	while (TRUE)
@@ -209,15 +202,9 @@ void *consumer(void *param)
 }
 
 
-/*   char *argv[] - contains the 4 parameters being passed from command line:
- *      0. File name.
- *      1. How long the main thread sleep before terminating.
- *      2. The number of producer threads.
- *      3. The number of consumer threads.
- */
 // PURPOSE: Runs the Producer-Consumer simulation.
-// PARAMETER: argc is the number of parameters (should be 4).
-//			  argv holds these values:
+// PARAMETER: argc (argument counter) is the number of parameters pointed to by argv (should be 4 for this program).
+//			  argv (argument vector) holds pointers to these strings:
 // 				- The 1st is the filename (automatic).
 // 				- The 2nd is time (in seconds) for main to sleep provided by user.
 // 				- The 3rd is the number of producer threads to create provided by user.
@@ -225,17 +212,18 @@ void *consumer(void *param)
 // Logic: todo
 int main(int argc, char *argv[])
 {
-	// Check validity of command line arguments
+	// Ensure that the user has supplied enough arguments on the command line
 	if (argc != 4)
 	{
 		printf("Error: Not enough arguments were entered.\n");
 		return -1;
 	}
 
+	// Ensure that the three arguments provided are valid for our uses (non-negative)
 	if (atoi(argv[1]) < 0 || atoi(argv[2]) < 0 || atoi(argv[3]) < 0)
 	{
 		printf("Error: Entries must be greater than or equal to 0");
-		return -1;
+		exit(-1);
 	}
 
 	// Store arguments
@@ -252,19 +240,17 @@ int main(int argc, char *argv[])
 	printf("\nNumber of consumer threads = %d ", num_consume_threads);
 	printf("\n\n");
 
-	// Initialize semaphores, muxtex, attributes, and counters
+	// Initialize mutex, semaphores, attributes, and counters
 	initialize();
 
 	// Create producer threads
-	int i, j;
-
-	for (i = 0; i < num_produce_threads; i++)
+	for (int i = 0; i < num_produce_threads; i++)
 	{
 		pthread_create(&pTID, &attr, producer, NULL);
 	}
 
 	// Create consumer threads
-	for (j = 0; j < num_consume_threads; j++)
+	for (int j = 0; j < num_consume_threads; j++)
 	{
 		pthread_create(&cTID, &attr, consumer, NULL);
 	}
