@@ -145,14 +145,13 @@ int removeItem(buffer_item *item)
 // LOGIC: Sleeps for a random time that is less than main's sleep time, then wait for empty and mutex lock.
 // Then pick a random number and insert it into the buffer. If that fails, print an error. Then release the lock
 // and post a full semaphore.
-_Noreturn void *producer()
+void *producer(void *param)
 {
 	buffer_item item;
 	while (TRUE)
 	{
-		// Sleep for a random period of time between 1 and main sleep time
-		int randSleep = rand() % main_sleep + 1;
-		sleep(randSleep);
+		// Sleep for a random period of time less than 1 second
+		usleep(rand()%1000000);
 
 		// Before entering critical section, wait for the empty signal then acquire the mutex lock
 		sem_wait(&empty);
@@ -180,14 +179,13 @@ _Noreturn void *producer()
 // PARAMETER: None
 // LOGIC: Sleeps for a random time that is less than main's sleep time, then wait for empty and mutex lock.
 // Attempt to remove an item from the buffer; if fails print an error. Release the mutex and post a full semaphore.
-_Noreturn void *consumer()
+void *consumer(void *param)
 {
 	buffer_item item;
 	while (TRUE)
 	{
-		// Sleep for a random period of time between 1 and main sleep time
-		int randomSleep = rand() % main_sleep + 1;
-		sleep(randomSleep);
+		// Sleep for a random period of time less than 1 second
+		usleep(rand()%1000000);
 
 		// Wait for the producer to signal full then acquire mutex lock
 		sem_wait(&full);
@@ -242,6 +240,7 @@ int main(int argc, char *argv[])
 
 	// Display values entered by user
 	printf("Program name is: %s", argv[0]);
+	printf("\nBuffer size is: %d", BUFFER_SIZE);
 	printf("\nTime to sleep before terminating = %d ", main_sleep);
 	printf("\nNumber of producer threads = %d ", num_produce_threads);
 	printf("\nNumber of consumer threads = %d ", num_consume_threads);
